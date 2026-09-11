@@ -83,6 +83,22 @@ describe('csrfProtection middleware', () => {
     })
   })
 
+  describe('HEAD requests', () => {
+    it('initializes a CSRF token for GET-backed route handlers', () => {
+      const req = makeReq({ method: 'HEAD' })
+      const res = makeRes()
+      let nextCalled = false
+
+      middleware(req as never, res as never, () => {
+        nextCalled = true
+      })
+
+      expect(nextCalled).toBe(true)
+      expect(res._cookies).toHaveLength(1)
+      expect(res.locals.csrfToken).toBe(res._cookies[0].value)
+    })
+  })
+
   describe('POST requests', () => {
     it('validates matching CSRF tokens from header', () => {
       const token = 'a'.repeat(64) // 64-char hex token

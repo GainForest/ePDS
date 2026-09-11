@@ -6,8 +6,8 @@ const CSRF_HEADER = 'x-csrf-token'
 
 export function csrfProtection(_secret: string) {
   return (req: Request, res: Response, next: NextFunction): void => {
-    // GET requests: set CSRF cookie if not present
-    if (req.method === 'GET') {
+    // GET-backed routes need a CSRF token for both GET and implicit HEAD requests.
+    if (req.method === 'GET' || req.method === 'HEAD') {
       if (!req.cookies[CSRF_COOKIE]) {
         const token = crypto.randomBytes(32).toString('hex')
         res.cookie(CSRF_COOKIE, token, {
