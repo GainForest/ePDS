@@ -5,7 +5,6 @@ export interface AuthServiceConfig {
   hostname: string
   port: number
   sessionSecret: string
-  csrfSecret: string
   /** Shared HMAC-SHA256 secret for signing epds-callback redirect URLs. */
   epdsCallbackSecret: string
   pdsHostname: string
@@ -22,6 +21,8 @@ export interface AuthServiceConfig {
   dbLocation: string
   otpLength: number
   otpCharset: 'numeric' | 'alphanumeric'
+  /** Resend webhook signing secret. When unset, the receiver is disabled. */
+  resendWebhookSecret?: string
   /**
    * OAuth client_id URLs trusted for branding injection. Used to gate
    * CSS branding injection AND client-supplied email templates

@@ -29,7 +29,10 @@ import {
   resolveDidToPds,
   discoverOAuthEndpoints,
 } from '@/lib/auth'
-import { createOAuthSessionCookie } from '@/lib/session'
+import {
+  createOAuthSessionCookie,
+  OAUTH_COOKIE_MAX_AGE_SECONDS,
+} from '@/lib/session'
 import { signClientAssertion } from '@/lib/client-jwk'
 import { validateEmail, validateHandle, sanitizeForLog } from '@/lib/validation'
 
@@ -150,7 +153,8 @@ export async function GET(request: Request) {
       client_id: clientId,
       redirect_uri: redirectUri,
       response_type: 'code',
-      scope: 'atproto transition:generic',
+      scope:
+        'atproto include:org.hypercerts.authWrite include:app.certified.authWrite',
       state,
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
@@ -210,13 +214,10 @@ export async function GET(request: Request) {
     const oauthCookie = createOAuthSessionCookie(sessionData)
 
     if (!parRes.ok) {
-      const parErrBody = await parRes.text()
-      console.error('[oauth/login] PAR failed:', parRes.status, parErrBody)
-
-      // Check for DPoP nonce requirement
       const dpopNonce = parRes.headers.get('dpop-nonce')
       if (dpopNonce) {
-        console.log('[oauth/login] Retrying with DPoP nonce')
+        console.log('[oauth/login] PAR requires DPoP nonce; retrying')
+        await parRes.body?.cancel()
         const dpopProof2 = createDpopProof({
           privateKey,
           jwk: publicJwk,
@@ -263,12 +264,14 @@ export async function GET(request: Request) {
           httpOnly: true,
           secure: true,
           sameSite: 'lax',
-          maxAge: 600,
+          maxAge: OAUTH_COOKIE_MAX_AGE_SECONDS,
           path: '/',
         })
         return resp2
       }
 
+      const parErrBody = await parRes.text()
+      console.error('[oauth/login] PAR failed:', parRes.status, parErrBody)
       return NextResponse.redirect(new URL('/?error=par_failed', baseUrl))
     }
 
@@ -281,7 +284,7 @@ export async function GET(request: Request) {
       httpOnly: true,
       secure: true,
       sameSite: 'lax',
-      maxAge: 600,
+      maxAge: OAUTH_COOKIE_MAX_AGE_SECONDS,
       path: '/',
     })
     return response

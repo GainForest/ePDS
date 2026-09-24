@@ -1,4 +1,4 @@
-import { createLogger, getEpdsVersion } from '@certified-app/shared'
+import { createLogger, getEpdsVersion, requireEnv } from '@certified-app/shared'
 import express from 'express'
 import cookieParser from 'cookie-parser'
 import * as path from 'node:path'
@@ -18,6 +18,10 @@ import { createChooseHandleRouter } from './routes/choose-handle.js'
 import { createHeartbeatRouter } from './routes/heartbeat.js'
 import { createPreviewRouter } from './routes/preview.js'
 import { createPreviewEmailsRouter } from './routes/preview-emails.js'
+import {
+  createResendWebhookRouter,
+  RESEND_WEBHOOK_PATH,
+} from './routes/resend-webhook.js'
 import { createRootRouter } from './routes/root.js'
 import { createTestHooksRouter } from './routes/test-hooks.js'
 import { resolveAuthPort } from './lib/resolve-port.js'
@@ -41,6 +45,7 @@ export function createAuthService(config: AuthServiceConfig): {
 } {
   const ctx = new AuthServiceContext(config)
   const app = express()
+  app.set('trust proxy', 1)
 
   // Mount better-auth BEFORE express.json() so it can parse its own request bodies.
   // All better-auth endpoints live under /api/auth/*.
@@ -53,8 +58,29 @@ export function createAuthService(config: AuthServiceConfig): {
   )
   app.all('/api/auth/*', toNodeHandler(betterAuthInstance))
 
+  // Webhook verification requires the exact request bytes, so mount this
+  // before any urlencoded or JSON body parser. It deliberately sits outside
+  // browser CSRF protection; authenticity comes from the Svix signature.
+  if (config.resendWebhookSecret) {
+    app.use(
+      RESEND_WEBHOOK_PATH,
+      requestRateLimit({
+        windowMs: 60_000,
+        maxRequests: 300,
+        keyPrefix: 'resend-webhook',
+      }),
+    )
+    app.use(
+      createResendWebhookRouter(
+        config.resendWebhookSecret,
+        config.email.from,
+        config.otpLength,
+        config.otpCharset,
+      ),
+    )
+  }
+
   // Middleware
-  app.set('trust proxy', 1)
   app.use(express.urlencoded({ extended: true }))
   app.use(express.json())
   app.use(cookieParser())
@@ -74,7 +100,7 @@ export function createAuthService(config: AuthServiceConfig): {
     app.use(createTestHooksRouter(config.dbLocation))
   }
 
-  app.use(csrfProtection(config.csrfSecret))
+  app.use(csrfProtection())
   app.use(requestRateLimit({ windowMs: 60_000, maxRequests: 60 }))
 
   // Security headers (X-Frame-Options, CSP, HSTS, etc.). The CSP's
@@ -143,11 +169,8 @@ async function main() {
   const config: AuthServiceConfig = {
     hostname: process.env.AUTH_HOSTNAME || 'auth.localhost',
     port: resolveAuthPort(),
-    sessionSecret:
-      process.env.AUTH_SESSION_SECRET || 'dev-session-secret-change-me',
-    csrfSecret: process.env.AUTH_CSRF_SECRET || 'dev-csrf-secret-change-me',
-    epdsCallbackSecret:
-      process.env.EPDS_CALLBACK_SECRET || 'dev-callback-secret-change-me',
+    sessionSecret: requireEnv('AUTH_SESSION_SECRET'),
+    epdsCallbackSecret: requireEnv('EPDS_CALLBACK_SECRET'),
     pdsHostname: process.env.PDS_HOSTNAME || 'localhost',
     pdsPublicUrl: process.env.PDS_PUBLIC_URL || 'http://localhost:3000',
     email: {
@@ -173,6 +196,7 @@ async function main() {
     otpCharset: (process.env.OTP_CHARSET || 'numeric') as
       | 'numeric'
       | 'alphanumeric',
+    resendWebhookSecret: process.env.RESEND_WEBHOOK_SECRET || undefined,
     trustedClients: (process.env.PDS_OAUTH_TRUSTED_CLIENTS || '')
       .split(',')
       .map((s) => s.trim())

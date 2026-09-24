@@ -1,5 +1,301 @@
 # ePDS
 
+## 0.9.0
+
+### Who should read this release
+
+- **End users:**
+  - [Update sign-in and approval screens while keeping account switching in email sign-in and preserving ePDS branding.](#v0.9.0-update-sign-in-and-approval-screens-while-keeping-account)
+- **Client app developers:**
+  - [Update sign-in and approval screens while keeping account switching in email sign-in and preserving ePDS branding.](#v0.9.0-update-sign-in-and-approval-screens-while-keeping-account)
+- **Operators:**
+  - [Update sign-in and approval screens while keeping account switching in email sign-in and preserving ePDS branding.](#v0.9.0-update-sign-in-and-approval-screens-while-keeping-account)
+
+### Minor Changes
+
+- <a id="v0.9.0-update-sign-in-and-approval-screens-while-keeping-account"></a> [#251](https://github.com/hypercerts-org/ePDS/pull/251) [`afe6be7`](https://github.com/hypercerts-org/ePDS/commit/afe6be7daac04193a2a59fe3cf934ee659e74768) Thanks [@Kzoeps](https://github.com/Kzoeps)! - Update sign-in and approval screens while keeping account switching in email sign-in and preserving ePDS branding.
+
+  **Affects:** End users, Client app developers, Operators
+
+  **End users:** Selecting “Another account” continues to open the email sign-in form instead of the server's password form. Authorization and account-selection screens now use consistent ePDS colors, surfaces, and responsive controls instead of partially falling back to upstream styling.
+
+  **Client app developers:** Review consent and account-picker branding against the updated screens. Update custom `branding.css` to target provider semantic variables and `data-slot` component attributes; CSS targeting old gray/slate utility classes may no longer match. The demo themes illustrate the supported provider UI 0.10 approach. Unresolved supported handles now return `HandleNotFound`, and OAuth/account-management request bodies over 100 KiB return HTTP 413.
+
+  **Operators:** This upgrades PDS to 0.5.34 and shared safe-fetch to 0.4.0. Rebuild both core and auth images, verify startup with their bundled Node/Undici versions, and validate outbound identity/service resolution against the stricter URL policy before rollout. No new upstream database migrations were found in the assessed release range; rehearse rollback against copied data rather than assuming runtime compatibility.
+
+## 0.8.0
+
+### Who should read this release
+
+- **End users:**
+  - [Signing in and managing your account now run on the latest AT Protocol server, which requires operators to upgrade to Node.js 22.19 or newer.](#v0.8.0-signing-in-and-managing-your-account-now-run-on-the-latest)
+  - [Catch likely email-domain typos before sending a sign-in code.](#v0.8.0-catch-likely-email-domain-typos-before-sending-a-sign-in)
+  - [Sign-in, recovery and handle-choice feedback is now announced automatically by screen readers.](#v0.8.0-sign-in-recovery-and-handle-choice-feedback-is-now)
+  - [Sign-in code boxes now ignore stray characters pasted or typed alongside your code.](#v0.8.0-sign-in-code-boxes-now-ignore-stray-characters-pasted-or)
+  - [Asking for a new sign-in code now clears the boxes and tells you the old code has stopped working.](#v0.8.0-asking-for-a-new-sign-in-code-now-clears-the-boxes-and)
+  - [Sign-in and recovery email fields now work more reliably with browser autofill and password managers.](#v0.8.0-sign-in-and-recovery-email-fields-now-work-more-reliably)
+  - [Sign-in pages no longer leak a malformed client_id as the displayed app name.](#v0.8.0-sign-in-pages-no-longer-leak-a-malformed-client-id-as-the)
+  - [Handle-picker error wording is now accurate when the handle is reserved.](#v0.8.0-handle-picker-error-wording-is-now-accurate-when-the-handle)
+  - [Sign-in errors are written in plain English instead of showing the raw failure code.](#v0.8.0-sign-in-errors-are-written-in-plain-english-instead-of)
+  - [Sign-in buttons now show a visible keyboard focus ring.](#v0.8.0-sign-in-buttons-now-show-a-visible-keyboard-focus-ring)
+  - [Small grey text on the sign-in page is darker and easier to read.](#v0.8.0-small-grey-text-on-the-sign-in-page-is-darker-and-easier-to)
+  - [Apps you sign in to are now told that your email address is confirmed.](#v0.8.0-apps-you-sign-in-to-are-now-told-that-your-email-address-is)
+  - [The sign-in button that emails you another code now says "Send a new code" instead of "Resend code".](#v0.8.0-the-sign-in-button-that-emails-you-another-code-now-says)
+  - [The email sign-in button now waits until the page is ready before accepting clicks.](#v0.8.0-the-email-sign-in-button-now-waits-until-the-page-is-ready)
+  - [Sign-in error messages now appear next to the field that caused them, instead of at the top of the page.](#v0.8.0-sign-in-error-messages-now-appear-next-to-the-field-that)
+  - [Clickable text on the sign-in screens now looks the same wherever it appears.](#v0.8.0-clickable-text-on-the-sign-in-screens-now-looks-the-same)
+  - ["Use different email" on the sign-in code page now clears the email field.](#v0.8.0-use-different-email-on-the-sign-in-code-page-now-clears-the)
+- **Client app developers:**
+  - [The approval and account-chooser screens now honour the handle mode your app asked for, instead of falling back to the server default.](#v0.8.0-the-approval-and-account-chooser-screens-now-honour-the)
+  - [Small grey text on the sign-in page is darker and easier to read.](#v0.8.0-small-grey-text-on-the-sign-in-page-is-darker-and-easier-to)
+  - [Apps you sign in to are now told that your email address is confirmed.](#v0.8.0-apps-you-sign-in-to-are-now-told-that-your-email-address-is)
+  - [Clickable text on the sign-in screens now looks the same wherever it appears.](#v0.8.0-clickable-text-on-the-sign-in-screens-now-looks-the-same)
+- **Operators:**
+  - [Signing in and managing your account now run on the latest AT Protocol server, which requires operators to upgrade to Node.js 22.19 or newer.](#v0.8.0-signing-in-and-managing-your-account-now-run-on-the-latest)
+  - [Apps you sign in to are now told that your email address is confirmed.](#v0.8.0-apps-you-sign-in-to-are-now-told-that-your-email-address-is)
+  - [Both services now refuse to start unless their secret environment variables are set, instead of silently falling back to well-known development defaults.](#v0.8.0-both-services-now-refuse-to-start-unless-their-secret)
+  - [Resend webhook logs now identify the email event type and provider in their message text.](#v0.8.0-resend-webhook-logs-now-identify-the-email-event-type-and)
+
+### Minor Changes
+
+- <a id="v0.8.0-signing-in-and-managing-your-account-now-run-on-the-latest"></a> [#233](https://github.com/hypercerts-org/ePDS/pull/233) [`ebd214e`](https://github.com/hypercerts-org/ePDS/commit/ebd214effb0072b5280f2902083f8d0ab1366e4d) Thanks [@aspiers](https://github.com/aspiers)! - Signing in and managing your account now run on the latest AT Protocol server, which requires operators to upgrade to Node.js 22.19 or newer.
+
+  **Affects:** End users, Operators
+
+  **End users:** the account and sign-in screens now come from a newer version of the underlying AT Protocol software, which adds changing your handle and deactivating or deleting your account through the account-management interface. The passwordless email-code sign-in and email verification you already use through ePDS are unchanged.
+
+  **Operators:**
+  - ePDS now requires **Node.js 22.19.0 or newer** (previously 20). Deployments pinned to Node 20 must upgrade; the Docker images already use `node:22-alpine`. `engines.node` is now `>=22.19.0` (the floor is set by a transitive `undici@8` runtime dependency, which fails on Node 22.0–22.18).
+  - The bundled AT Protocol packages moved to their latest releases: `@atproto/pds` 0.5.23, `@atproto/oauth-provider` 0.21.1, `@atproto/oauth-provider-ui` 0.8.9.
+  - No configuration changes are required, but the native `better-sqlite3` module must be built for the Node 22 ABI — a clean `pnpm install` on Node 22 handles this; an in-place Node version switch needs `pnpm rebuild better-sqlite3`.
+
+- <a id="v0.8.0-catch-likely-email-domain-typos-before-sending-a-sign-in"></a> [#231](https://github.com/hypercerts-org/ePDS/pull/231) [`fe3b15c`](https://github.com/hypercerts-org/ePDS/commit/fe3b15c17b85319e7d7c73b036bafe90ade8c06b) Thanks [@aspiers](https://github.com/aspiers)! - Catch likely email-domain typos before sending a sign-in code.
+
+  **Affects:** End users
+
+  **End users:** addresses one edit away from Gmail, Hotmail, Outlook, Yahoo, or iCloud now show a “Did you mean…?” prompt as soon as they are typed. Accepting replaces the address in the email field; dismissing keeps the original. The prompt never changes or blocks an address silently.
+
+### Patch Changes
+
+- <a id="v0.8.0-sign-in-recovery-and-handle-choice-feedback-is-now"></a> [#224](https://github.com/hypercerts-org/ePDS/pull/224) [`610b5e6`](https://github.com/hypercerts-org/ePDS/commit/610b5e6318e363f9987adaf7846393e66cd988a0) Thanks [@aspiers](https://github.com/aspiers)! - Sign-in, recovery and handle-choice feedback is now announced automatically by screen readers.
+
+  **Affects:** End users
+
+  **End users:** authentication errors now use standard alert and live-region semantics across sign-in, recovery, handle selection, and the demo client, so screen-reader users hear failures without having to search the page for changed text. Repeated failures — such as entering a second incorrect one-time code — announce each time rather than falling silent, and handle availability ("Available!" / "Already taken.") is now announced as you type.
+
+- <a id="v0.8.0-sign-in-code-boxes-now-ignore-stray-characters-pasted-or"></a> [#223](https://github.com/hypercerts-org/ePDS/pull/223) [`0637fa7`](https://github.com/hypercerts-org/ePDS/commit/0637fa77e71fc425647a67ced188372311500ef3) Thanks [@aspiers](https://github.com/aspiers)! - Sign-in code boxes now ignore stray characters pasted or typed alongside your code.
+
+  **Affects:** End users
+
+  **End users:** every screen that asks for a sign-in code — the main sign-in screen, Account Settings sign-in, and account recovery — now drops characters your code can't contain, so a code pasted with surrounding quotes, brackets, or a trailing full stop is accepted instead of rejected. The main sign-in screen previously ignored only spaces and line breaks. Where the operator has turned on codes that mix letters and numbers, typing them in lowercase now works too.
+
+- <a id="v0.8.0-asking-for-a-new-sign-in-code-now-clears-the-boxes-and"></a> [#220](https://github.com/hypercerts-org/ePDS/pull/220) [`68b2104`](https://github.com/hypercerts-org/ePDS/commit/68b21040c6e823b038c2e30410288a225c680f6c) Thanks [@aspiers](https://github.com/aspiers)! - Asking for a new sign-in code now clears the boxes and tells you the old code has stopped working.
+
+  **Affects:** End users
+
+  **End users:** the boxes reset on **Send a new code**, so a half-typed old code no longer has to be deleted by hand before you can type the new one. The confirmation also warns that only the newest code will be accepted, and points at the spam folder — the two things most likely to be going wrong for anyone who got that far.
+
+- <a id="v0.8.0-sign-in-and-recovery-email-fields-now-work-more-reliably"></a> [#222](https://github.com/hypercerts-org/ePDS/pull/222) [`9e12e30`](https://github.com/hypercerts-org/ePDS/commit/9e12e30edf8a9259fec8d261f8587d90d24a2e37) Thanks [@aspiers](https://github.com/aspiers)! - Sign-in and recovery email fields now work more reliably with browser autofill and password managers.
+
+  **Affects:** End users
+
+  **End users:** email fields now identify themselves to browsers as email addresses, while the same sign-in field identifies itself as a username after switching to handle entry. This helps browsers and password managers offer the right saved value in each mode.
+
+- <a id="v0.8.0-sign-in-pages-no-longer-leak-a-malformed-client-id-as-the"></a> [#229](https://github.com/hypercerts-org/ePDS/pull/229) [`6f4fa2d`](https://github.com/hypercerts-org/ePDS/commit/6f4fa2dd43b32720154d0b8cc80e272f32568b7b) Thanks [@aspiers](https://github.com/aspiers)! - Sign-in pages no longer leak a malformed client_id as the displayed app name.
+
+  **Affects:** End users
+
+  **End users:** if you arrived at a sign-in page with a broken `client_id` parameter on the URL (e.g. from a misconfigured app or a tampered link), the page would display that raw broken value as the app's name, e.g. "Sign in to not-a-url" or "Sign in to my-local-app". The page now falls back to "an application" in that case, so a malformed value in the URL doesn't leak into the visible page text or browser tab title.
+
+- <a id="v0.8.0-the-approval-and-account-chooser-screens-now-honour-the"></a> [#243](https://github.com/hypercerts-org/ePDS/pull/243) [`534647d`](https://github.com/hypercerts-org/ePDS/commit/534647da664abe07cf543759f94b8286dc7b81a6) Thanks [@aspiers](https://github.com/aspiers)! - The approval and account-chooser screens now honour the handle mode your app asked for, instead of falling back to the server default.
+
+  **Affects:** Client app developers
+
+  **Client app developers:** no action needed — `epds_handle_mode` is resolved exactly as before (the `/oauth/authorize` query parameter, then your OAuth client metadata, then the server default). Previously the resolved mode was lost on the way to the approval step, so a flow that asked for a chosen handle could still show a generated one there. The mode is now carried through `/oauth/epds-callback` and applied on the approval and chooser screens. Values that are not one of the recognised modes are ignored rather than forwarded.
+
+- <a id="v0.8.0-handle-picker-error-wording-is-now-accurate-when-the-handle"></a> [#227](https://github.com/hypercerts-org/ePDS/pull/227) [`68b0760`](https://github.com/hypercerts-org/ePDS/commit/68b0760afa923ca2a3f3b4997137eca1a5ca0b77) Thanks [@aspiers](https://github.com/aspiers)! - Handle-picker error wording is now accurate when the handle is reserved.
+
+  **Affects:** End users
+
+  **End users:** if you tried to claim a handle that was on the reserved list (admin, www, …) the picker said "That handle was just taken — please choose another." That's misleading — it wasn't just taken, it's permanently unavailable. The wording is now "That handle is not available — please choose another." which doesn't imply you can wait it out.
+
+- <a id="v0.8.0-sign-in-errors-are-written-in-plain-english-instead-of"></a> [#237](https://github.com/hypercerts-org/ePDS/pull/237) [`ddde1b2`](https://github.com/hypercerts-org/ePDS/commit/ddde1b22f89b45dfd90a38a6f34915dce9b013d3) Thanks [@aspiers](https://github.com/aspiers)! - Sign-in errors are written in plain English instead of showing the raw failure code.
+
+  **Affects:** End users
+
+  **End users:** a rejected code used to report "Invalid OTP", an unexplained acronym that ran straight into the recovery link beside it — "Invalid OTP Send a new code". It now reads "That code didn't work." followed by the link, and the two other common failures are similarly rewritten: an aged-out code says "That code has expired.", and one rejected after repeated wrong attempts says "Too many tries — that code is no longer usable.". Any failure outside those three is still shown as-is rather than hidden behind a generic apology, so an unexpected problem can still be reported accurately.
+
+- <a id="v0.8.0-sign-in-buttons-now-show-a-visible-keyboard-focus-ring"></a> [#225](https://github.com/hypercerts-org/ePDS/pull/225) [`23dcd0f`](https://github.com/hypercerts-org/ePDS/commit/23dcd0f0b88ca5e87b4b465523be19d14864ea04) Thanks [@aspiers](https://github.com/aspiers)! - Sign-in buttons now show a visible keyboard focus ring.
+
+  **Affects:** End users
+
+  **End users:** keyboard users tabbing through the sign-in pages couldn't tell where focus was — the buttons styled out the browser default focus ring without replacing it. Verify, Resend, Use different email, Recover, Send recovery code, Continue with email, Update handle, etc. all now show a clear outline when focused via the keyboard, while still hiding the ring on a mouse click.
+
+- <a id="v0.8.0-small-grey-text-on-the-sign-in-page-is-darker-and-easier-to"></a> [#232](https://github.com/hypercerts-org/ePDS/pull/232) [`87ef832`](https://github.com/hypercerts-org/ePDS/commit/87ef8320a169e970474747ca0e9d65b26a3984da) Thanks [@aspiers](https://github.com/aspiers)! - Small grey text on the sign-in page is darker and easier to read.
+
+  **Affects:** End users, Client app developers
+
+  **End users:** the 13px grey text — the terms line, the "Recover with backup email" link, the "or continue with" / "or use email" separators, and the "powered by Certified" footer — was too light to meet the WCAG AA contrast minimum against either the card or the page background behind it. It is now dark enough to pass on both.
+
+  **Client app developers:** the `--muted-foreground` custom property on the sign-in page changes from `[#999](https://github.com/hypercerts-org/ePDS/issues/999)` to `[#666](https://github.com/hypercerts-org/ePDS/issues/666)`. If your `branding.css` sets it, check your value clears 4.5:1 against both `#F8F8F8` (the card) and `#E8E8E8` (the page) — the old default reached only 2.68:1 and 2.33:1 respectively, so a value chosen to sit alongside it may be equally low. The separator text between the social and email sign-in options now follows `--muted-foreground` too, where it previously ignored your override and stayed grey.
+
+- <a id="v0.8.0-apps-you-sign-in-to-are-now-told-that-your-email-address-is"></a> [#234](https://github.com/hypercerts-org/ePDS/pull/234) [`3924855`](https://github.com/hypercerts-org/ePDS/commit/39248551ccaa1097cdfd569bbe4d6617ad0fed7f) Thanks [@aspiers](https://github.com/aspiers)! - Apps you sign in to are now told that your email address is confirmed.
+
+  **Affects:** End users, Client app developers, Operators
+
+  **End users:** Apps no longer ask you to verify an address you have already confirmed with an emailed code.
+
+  **Client app developers:** The `email_verified` claim is now `true` for accounts that signed in through the emailed-code flow, instead of always `false`.
+
+  **Operators:** Deploy the auth service and the PDS together — the signed handover between them carries a new required field, and a mixed pair rejects sign-in until both are updated. An older auth service is rejected with an explicit `Missing or invalid email_verified parameter` rather than a generic signature error, so a mixed-version rollout is recognisable in the logs. Accounts predating this release are repaired the next time their owner signs in **through the emailed-code flow**; a sign-in that does not prove control of the address leaves them unconfirmed. To fix the rest, see "Backfilling Email Confirmation" in `docs/deployment.md`.
+
+- <a id="v0.8.0-both-services-now-refuse-to-start-unless-their-secret"></a> [#41](https://github.com/hypercerts-org/ePDS/pull/41) [`d4256ea`](https://github.com/hypercerts-org/ePDS/commit/d4256ea03a0982386662c3a9adb1ff7d9f347a38) Thanks [@aspiers](https://github.com/aspiers)! - Both services now refuse to start unless their secret environment variables are set, instead of silently falling back to well-known development defaults.
+
+  **Affects:** Operators
+
+  **Operators:** `AUTH_SESSION_SECRET` and `EPDS_CALLBACK_SECRET` are now mandatory. Previously, a deployment that omitted them would boot successfully using hardcoded placeholders such as `dev-session-secret-change-me`, leaving session cookies and the signed `/oauth/epds-callback` redirect verifiable by anyone who has read the source. The auth service and PDS Core now throw at startup with a message naming the missing variable and the `openssl rand -hex 32` command to generate one. Check that both variables are set in your deployment before upgrading, and note that `EPDS_CALLBACK_SECRET` must be identical across the two services.
+
+  `AUTH_CSRF_SECRET` has been removed entirely. CSRF protection derives its tokens from `crypto.randomBytes` and never consumed the value, so the variable was inert; it is no longer read, no longer generated by `scripts/setup.sh`, and can be deleted from your environment.
+
+- <a id="v0.8.0-resend-webhook-logs-now-identify-the-email-event-type-and"></a> [#209](https://github.com/hypercerts-org/ePDS/pull/209) [`0af6d7f`](https://github.com/hypercerts-org/ePDS/commit/0af6d7f690f848517269e181d18a9a6229828e79) Thanks [@aspiers](https://github.com/aspiers)! - Resend webhook logs now identify the email event type and provider in their message text.
+
+  **Affects:** Operators
+
+  **Operators:** Log messages use text such as `Received email event 'delivered' from Resend`, making events legible in log viewers that de-emphasize structured fields.
+
+- <a id="v0.8.0-the-sign-in-button-that-emails-you-another-code-now-says"></a> [#236](https://github.com/hypercerts-org/ePDS/pull/236) [`e238c38`](https://github.com/hypercerts-org/ePDS/commit/e238c3830566b5e2960d4bd5bf40e474ac6db0e4) Thanks [@aspiers](https://github.com/aspiers)! - The sign-in button that emails you another code now says "Send a new code" instead of "Resend code".
+
+  **Affects:** End users
+
+  **End users:** each request emails a genuinely new code and stops the previous one working, so "Resend" was misleading — it suggested the code already in your inbox was still the one to type. The confirmation after clicking now starts "Sent!" rather than "Resent!", and still tells you that earlier codes no longer work. The same wording appears on the recovery and account sign-in pages, and on the link offered beside a rejected or expired code.
+
+- <a id="v0.8.0-the-email-sign-in-button-now-waits-until-the-page-is-ready"></a> [#242](https://github.com/hypercerts-org/ePDS/pull/242) [`a0a819a`](https://github.com/hypercerts-org/ePDS/commit/a0a819af2d39288351ea17f4f4f9de62af026be8) Thanks [@aspiers](https://github.com/aspiers)! - The email sign-in button now waits until the page is ready before accepting clicks.
+
+  **Affects:** End users
+
+  **End users:** tapping Continue before the sign-in page finished loading could start a broken sign-in attempt that silently did nothing. The button is now disabled until the page is ready. Browsers with JavaScript disabled see a message explaining that JavaScript is required to sign in with email, instead of a button that never responds.
+
+- <a id="v0.8.0-sign-in-error-messages-now-appear-next-to-the-field-that"></a> [#220](https://github.com/hypercerts-org/ePDS/pull/220) [`50c8620`](https://github.com/hypercerts-org/ePDS/commit/50c8620896d8c797ab629467e09701d983426468) Thanks [@aspiers](https://github.com/aspiers)! - Sign-in error messages now appear next to the field that caused them, instead of at the top of the page.
+
+  **Affects:** End users
+
+  **End users:** a rejected sign-in code used to report the problem above the page heading, several elements away from the boxes you had just typed into — easy to miss, and it left the **Verify** button looking like the thing to press again. The message now sits directly between the code boxes and **Verify**, and a failed email submission likewise reads under the email field rather than above it.
+
+  A rejected code now also carries a **Send a new code** link beside the message. The standalone button below the form was easy to overlook, and "that code didn't work" often means there is no usable code left at all rather than that you mistyped it — after too many wrong attempts, after signing in from another tab, or once an old code has aged out. Retyping cannot recover any of those. The boxes still clear and refocus, so retyping remains one keystroke away when that is what you need.
+
+- <a id="v0.8.0-clickable-text-on-the-sign-in-screens-now-looks-the-same"></a> [#237](https://github.com/hypercerts-org/ePDS/pull/237) [`43baeb5`](https://github.com/hypercerts-org/ePDS/commit/43baeb54c60402ab97050b5e4af5b143b8901640) Thanks [@aspiers](https://github.com/aspiers)! - Clickable text on the sign-in screens now looks the same wherever it appears.
+
+  **Affects:** End users, Client app developers
+
+  **End users:** the same action no longer renders differently depending on where it sits. "Resend code", "Use different email" and "Recover with backup email" are now all plain text that darkens when you point at it, while actions embedded in a sentence — "Send a new code" in an error message, and the Terms of Use and Privacy Policy links — stay underlined so they remain visible against the text around them. Pointing at an underlined action no longer makes its underline vanish, and every one of these actions now shows a focus outline when reached with the keyboard.
+
+  **Client app developers:** `--muted-foreground` now also sets the colour of the `.btn-secondary` actions on the sign-in page, which previously hardcoded `#6b6b6b`. If you override that custom property in your `branding.css`, it will now recolour "Resend code" and "Use different email" alongside "Recover with backup email" and the other muted text. Choose a value that clears 4.5:1 contrast against your card background. `--recovery-link-display` is unchanged.
+
+- <a id="v0.8.0-use-different-email-on-the-sign-in-code-page-now-clears-the"></a> [#215](https://github.com/hypercerts-org/ePDS/pull/215) [`1a90062`](https://github.com/hypercerts-org/ePDS/commit/1a900621936941066372228b423d26a6808cb21b) Thanks [@aspiers](https://github.com/aspiers)! - "Use different email" on the sign-in code page now clears the email field.
+
+  **Affects:** End users
+
+  **End users:** clicking **Use different email** on the code-entry page used to take you back to the email form with your previous address still filled in — exactly the opposite of what the button suggests, and forcing you to clear the field manually before you could type a new address. The form now starts empty, with the cursor in the field, so you can just type the new address and continue.
+
+## 0.7.0
+
+### Who should read this release
+
+- **Operators:**
+  - [Email delivery logs use a consistent recipient field.](#v0.7.0-email-delivery-logs-use-a-consistent-recipient-field)
+  - [OTP send logs now record how long the email handoff took, the provider's message ID, and the SMTP server response.](#v0.7.0-otp-send-logs-now-record-how-long-the-email-handoff-took)
+  - [Optional email-event logging for operators who choose the third-party Resend service to send email; ePDS continues to support other email providers.](#v0.7.0-optional-email-event-logging-for-operators-who-choose-the)
+
+### Minor Changes
+
+- <a id="v0.7.0-email-delivery-logs-use-a-consistent-recipient-field"></a> [#197](https://github.com/hypercerts-org/ePDS/pull/197) [`ce25beb`](https://github.com/hypercerts-org/ePDS/commit/ce25beba5e231e8300a875f1fc1d2ad37ae75527) Thanks [@aspiers](https://github.com/aspiers)! - Email delivery logs use a consistent recipient field.
+
+  **Affects:** Operators
+
+  **Operators:** All four email delivery paths now log the recipient as `email`: client-branded OTP, standard sign-in OTP, welcome OTP, and backup-email verification. Update structured-log queries for `Sent client-branded OTP email` to read `email` instead of `to`.
+
+- <a id="v0.7.0-otp-send-logs-now-record-how-long-the-email-handoff-took"></a> [#203](https://github.com/hypercerts-org/ePDS/pull/203) [`2193515`](https://github.com/hypercerts-org/ePDS/commit/2193515970c56035fd026c3df2b3f44e403eb801) Thanks [@aspiers](https://github.com/aspiers)! - OTP send logs now record how long the email handoff took, the provider's message ID, and the SMTP server response.
+
+  **Affects:** Operators
+
+  **Operators:** every OTP email completion line (all four paths — client-branded, sign-in, welcome, backup-email verification) now carries `elapsedMs`, `messageId`, and `smtpResponse` alongside `email`. `messageId` lets these logs be joined to Resend delivery events; `elapsedMs` isolates a slow SMTP handoff from other causes of late-arriving codes. Failed sends log `elapsedMs` too, on the existing `better-auth: failed to send OTP email` error line.
+
+- <a id="v0.7.0-optional-email-event-logging-for-operators-who-choose-the"></a> [#198](https://github.com/hypercerts-org/ePDS/pull/198) [`2bf9af4`](https://github.com/hypercerts-org/ePDS/commit/2bf9af420281c769ec88f19c9badd89f00acc03c) Thanks [@aspiers](https://github.com/aspiers)! - Optional email-event logging for operators who choose the third-party Resend service to send email; ePDS continues to support other email providers.
+
+  **Affects:** Operators
+
+  **Operators:** ePDS remains compatible with any SMTP provider and does not require Resend. Operators who already use Resend can opt in by registering `https://<AUTH_HOSTNAME>/webhooks/resend` for the documented email events and setting `RESEND_WEBHOOK_SECRET`; logs include delivery, open, complaint, suppression, and scheduling events. The route verifies each webhook, logs only events whose sender exactly matches `SMTP_FROM`, acknowledges unsupported click and inbound events without logging their payloads, and does not persist webhook data.
+
+## 0.6.5
+
+### Who should read this release
+
+- **End users:**
+  - [Signing in through the demo no longer silently fails if you take a while to enter your emailed code.](#v0.6.5-signing-in-through-the-demo-no-longer-silently-fails-if-you)
+  - [Sign-in now stays active while you retrieve your emailed code and offers a clear way to restart if it times out.](#v0.6.5-sign-in-now-stays-active-while-you-retrieve-your-emailed)
+- **Operators:**
+  - [Signing in through the demo no longer silently fails if you take a while to enter your emailed code.](#v0.6.5-signing-in-through-the-demo-no-longer-silently-fails-if-you)
+
+### Patch Changes
+
+- <a id="v0.6.5-signing-in-through-the-demo-no-longer-silently-fails-if-you"></a> [#187](https://github.com/hypercerts-org/ePDS/pull/187) [`dcc9590`](https://github.com/hypercerts-org/ePDS/commit/dcc95903ffd105b30d8d15ddf9e9fd8778973c68) Thanks [@aspiers](https://github.com/aspiers)! - Signing in through the demo no longer silently fails if you take a while to enter your emailed code.
+
+  **Affects:** End users, Operators
+
+  **End users:** If you requested a sign-in code, then took several minutes to fetch it from your email before entering it, the demo could fail at the last step with a generic "Authentication failed" message — even though your code was correct. That happened because the demo started its 10-minute sign-in timer before it sent the code, so it could forget the sign-in while a later-issued code was still valid. The demo now remembers your sign-in for up to an hour, and if it genuinely does time out you now see "Your sign-in took too long to finish. Please sign in again." instead of a message that made it look like you typed the code wrong.
+
+  **Operators:** The demo client's `oauth_state` cookie `maxAge` is raised from `600` (10 min) to `60 * 60` (1 hour), matching the auth service's `auth_flow` row TTL. Previously, the cookie's timer started when the OAuth flow began, while the OTP's 600-second validity started only when the code was issued, so the cookie could expire first. The OAuth callback now maps a missing/expired state cookie to `/?error=session_expired` rather than `/?error=auth_failed`; `session_expired` renders as "Your sign-in took too long to finish. Please sign in again."
+
+- <a id="v0.6.5-sign-in-now-stays-active-while-you-retrieve-your-emailed"></a> [#187](https://github.com/hypercerts-org/ePDS/pull/187) [`e1c9d06`](https://github.com/hypercerts-org/ePDS/commit/e1c9d0651d45e5c2605cb6e698cb4ea4c4b8cf05) Thanks [@aspiers](https://github.com/aspiers)! - Sign-in now stays active while you retrieve your emailed code and offers a clear way to restart if it times out.
+
+  **Affects:** End users
+
+  **End users:** Previously, taking more than about five minutes to enter a code could leave the surrounding sign-in expired even though the code was still valid. The code-entry page now keeps the sign-in active while it remains open. If browser suspension or a longer interruption still makes the sign-in unrecoverable, the page disables code entry and **Use different email**, hides **Resend code**, and shows **Start over**; clicking it returns to the app you came from so you can begin again.
+
+## 0.6.4
+
+### Who should read this release
+
+- **Client app developers:**
+  - [The `/preview/validate` page now checks `epds_handle_login_url` on your client metadata.](#v0.6.4-the-page-now-checks-on-your-client-metadata)
+- **Operators:**
+  - [Failed one-time code attempts now appear in the server logs, split by reason and tagged with the account's email.](#v0.6.4-failed-one-time-code-attempts-now-appear-in-the-server-logs)
+
+### Patch Changes
+
+- <a id="v0.6.4-failed-one-time-code-attempts-now-appear-in-the-server-logs"></a> [#189](https://github.com/hypercerts-org/ePDS/pull/189) [`008b143`](https://github.com/hypercerts-org/ePDS/commit/008b143d160e3b0e9b0a2fae887283de464be8a0) Thanks [@aspiers](https://github.com/aspiers)! - Failed one-time code attempts now appear in the server logs, split by reason and tagged with the account's email.
+
+  **Affects:** Operators
+
+  **Operators:** failed OTP verifications are now logged under the `auth:better-auth` logger.
+  - Each line carries an `email`, `statusCode`, and `path` field, and names the reason: `code expired`, `invalid or unrecognized code`, or `too many attempts, code invalidated`.
+  - Routine failures (expired / invalid) log at `info`; too-many-attempts logs at `warn`.
+  - All are visible at the default `info` level — no `LOG_LEVEL` change needed.
+
+- <a id="v0.6.4-the-page-now-checks-on-your-client-metadata"></a> [#176](https://github.com/hypercerts-org/ePDS/pull/176) [`a00cb25`](https://github.com/hypercerts-org/ePDS/commit/a00cb2529f64fc97429e99b4e6f7bb35d0a47682) Thanks [@aspiers](https://github.com/aspiers)! - The `/preview/validate` page now checks `epds_handle_login_url` on your client metadata.
+
+  **Affects:** Client app developers
+
+  **Client app developers:** a new `handle-login-url` row joins the existing field checks.
+  - Missing or empty value warns you that the "Or sign in with ATProto/Bluesky" button won't render.
+  - An `http(s)://` value is ok, matching the `isSafeHttpUrl` gate that renders the button at runtime (`http://` accepted so localhost dev clients still pass).
+  - Any other value (`javascript:`, `file:`, unparseable) errors, because the runtime gate would silently drop the button on real flows.
+
+## 0.6.3
+
+### Who should read this release
+
+- **End users:**
+  - [The final sign-in screen now lines up its message card with the page title.](#v0.6.3-the-final-sign-in-screen-now-lines-up-its-message-card-with)
+
+### Patch Changes
+
+- <a id="v0.6.3-the-final-sign-in-screen-now-lines-up-its-message-card-with"></a> [#169](https://github.com/hypercerts-org/ePDS/pull/169) [`cc65707`](https://github.com/hypercerts-org/ePDS/commit/cc65707ef4e0cfc7d4442bbb57ccd2c8639ec589) Thanks [@Kzoeps](https://github.com/Kzoeps)! - The final sign-in screen now lines up its message card with the page title.
+
+  **Affects:** End users
+
+  **End users:** After approving an app sign-in, the "Login complete" screen now keeps the "You are being redirected..." card visually aligned with the title instead of sitting slightly lower on the page.
+
 ## 0.6.2
 
 ### Who should read this release

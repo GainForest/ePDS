@@ -466,16 +466,19 @@ When(
       )
     }
 
-    // Backdate the auth_flow row so getAuthFlow() filters it out as
-    // expired. The epds_auth_flow cookie is left alone: keeping it lets
-    // the abort gate's /auth/ping call differentiate "auth_flow expired"
+    // Backdate this scenario's auth_flow row so getAuthFlow() filters
+    // it out as expired. Passing request_uri keeps the test hook safe
+    // when multiple Cucumber workers share one preview database.
+    // The epds_auth_flow cookie is left alone: keeping it lets the
+    // abort gate's /auth/ping call differentiate "auth_flow expired"
     // (cookie present but row gone -> reason: flow_expired) from
     // "no_cookie", which is what discriminates this scenario from
     // unrelated dead-session paths.
+    const requestUri = captureRequestUriFromPage(this)
     const flowResult = await callExpiryHook(
       '/_internal/test/expire-auth-flow',
       this.testEmail,
-      {},
+      { request_uri: requestUri },
     )
     if (flowResult.updated < 1) {
       throw new Error(
@@ -608,7 +611,7 @@ Then(
 )
 
 Then(
-  'the verification form shows an {string} error',
+  /^the verification form shows (?:an|the) "([^"]*)" error$/,
   async function (this: EpdsWorld, expected: string) {
     const page = getPage(this)
     await expect(page.locator('#error-msg')).toBeVisible({ timeout: 10_000 })
@@ -619,6 +622,20 @@ Then(
     await expect(page.locator('#error-msg')).toContainText(expected, {
       timeout: 10_000,
     })
+  },
+)
+
+When(
+  'the user enters two digits from the old OTP',
+  async function (this: EpdsWorld) {
+    const otpBoxes = getPage(this).locator('.otp-box')
+    await otpBoxes.nth(0).fill('1')
+    await otpBoxes.nth(1).fill('2')
+    // Prove the digits actually landed, so the later empty-box assertion
+    // demonstrates that resend cleared them rather than that they were
+    // never entered.
+    await expect(otpBoxes.nth(0)).toHaveValue('1')
+    await expect(otpBoxes.nth(1)).toHaveValue('2')
   },
 )
 
@@ -659,6 +676,21 @@ Then(
     const message = await waitForEmail(`to:${this.testEmail}`)
     this.lastEmailSubject = message.Subject
     this.otpCode = await extractOtp(message.ID)
+  },
+)
+
+Then(
+  'the OTP entry boxes are empty with the first box focused',
+  async function (this: EpdsWorld) {
+    if (!this.otpCode) {
+      throw new Error('No fresh OTP was captured from the mail trap')
+    }
+    const otpBoxes = getPage(this).locator('.otp-box')
+    await expect(otpBoxes).toHaveCount(this.otpCode.length)
+    for (let index = 0; index < this.otpCode.length; index += 1) {
+      await expect(otpBoxes.nth(index)).toHaveValue('')
+    }
+    await expect(otpBoxes.first()).toBeFocused()
   },
 )
 
@@ -839,3 +871,101 @@ Then(
     }
   },
 )
+
+// ---------------------------------------------------------------------------
+// Resend-button visibility (fix for the "fresh OTP wasted on dead PAR" UX)
+// ---------------------------------------------------------------------------
+//
+// The page never offers an action that cannot complete the flow. When the
+// PAR is dead, the standalone Resend button is removed from view and a
+// Start over button takes its place — clicking it bails to /auth/abort
+// rather than issuing an OTP that would only fail downstream. The steps
+// below trigger the page's reactive ping (via the visibilitychange
+// handler that fires on tab-foreground) so it can observe the dead PAR
+// and reconcile the UI without a 5-minute wall-clock wait.
+
+When('the OTP form re-checks PAR liveness', async function (this: EpdsWorld) {
+  const page = getPage(this)
+  // Drive the page's reactive ping via a string-source script.
+  // Using page.evaluate(() => ...) inlines esbuild's __name helper,
+  // which then fails in Playwright's evaluation context with
+  // "ReferenceError: __name is not defined". Passing a string
+  // bypasses the bundler.
+  await page.evaluate(`(function () {
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        get: function () { return 'visible' },
+      })
+      document.dispatchEvent(new Event('visibilitychange'))
+    })()`)
+})
+
+Then(
+  'the Send a new code button is no longer offered',
+  async function (this: EpdsWorld) {
+    const page = getPage(this)
+    await expect(page.locator('#btn-resend')).toBeHidden({ timeout: 5_000 })
+  },
+)
+
+Then(
+  'a Start over button is offered instead',
+  async function (this: EpdsWorld) {
+    const page = getPage(this)
+    await expect(page.locator('#btn-start-over')).toBeVisible({
+      timeout: 5_000,
+    })
+  },
+)
+
+// ---------------------------------------------------------------------------
+// Demo client cookie expiry simulation
+// ---------------------------------------------------------------------------
+//
+// The demo client stores OAuth state (state value, codeVerifier, token
+// endpoint, issuer) in a signed cookie called `oauth_state` with
+// `maxAge: 60 * 60` (1 hour; see
+// packages/demo/src/app/api/oauth/login/route.ts). If the cookie expires
+// or is cleared before the callback runs, the callback handler can't find
+// the OAuth state and redirects to /?error=session_expired.
+//
+// This step deletes the cookie programmatically so we can exercise the
+// post-cookie-expiry callback path without a wall-clock wait.
+
+When(
+  "the demo client's OAuth state cookie has expired",
+  async function (this: EpdsWorld) {
+    const page = getPage(this)
+    const ctx = page.context()
+    const before = await ctx.cookies()
+    const hasOAuthStateCookie = before.some((c) => c.name === 'oauth_state')
+    if (!hasOAuthStateCookie) {
+      throw new Error(
+        `Expected to find an oauth_state cookie set by the demo client but only saw: ${before.map((c) => c.name).join(', ')}`,
+      )
+    }
+    await ctx.clearCookies({ name: 'oauth_state' })
+  },
+)
+
+Then(
+  'the demo client surfaces a session-expired error',
+  async function (this: EpdsWorld) {
+    const origin = new URL(testEnv.demoUrl).origin
+    const page = getPage(this)
+    await page.waitForURL(`${origin}/?error=session_expired*`, {
+      timeout: 30_000,
+    })
+  },
+)
+
+// ---------------------------------------------------------------------------
+// "Use different email" UX
+// ---------------------------------------------------------------------------
+
+Then('the email input is empty and focused', async function (this: EpdsWorld) {
+  const page = getPage(this)
+  const input = page.locator('#email')
+  await expect(input).toHaveValue('', { timeout: 5_000 })
+  await expect(input).toBeFocused({ timeout: 5_000 })
+})

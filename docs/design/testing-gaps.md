@@ -11,11 +11,11 @@ pds-core callback, full OAuth flow).
 
 | Package / Area                | Coverage | Notes                                                                  |
 | ----------------------------- | -------- | ---------------------------------------------------------------------- |
-| `shared/`                     | ~96%     | Near-complete; only `index.ts` re-exports and one logger branch remain |
+| `shared/`                     | ~91%     | Version fallback tests added; metadata, handle, and prompt gaps remain |
 | `auth-service/lib/`           | ~77%     | `auto-provision.ts` at 0% (needs live PDS)                             |
 | `auth-service/middleware/`    | ~91%     | `rate-limit.ts` timer cleanup at 82%                                   |
 | `auth-service/email/`         | ~71%     | Template conditional branches partially covered                        |
-| `auth-service/routes/`        | 0%       | All seven route files — see below                                      |
+| `auth-service/routes/`        | ~35%     | Resend webhook is HTTP-tested; browser/OAuth routes remain gaps        |
 | `auth-service/better-auth.ts` | 0%       | better-auth wiring — see below                                         |
 | `auth-service/context.ts`     | 0%       | Minimal glue class                                                     |
 | `auth-service/index.ts`       | 0%       | Express app assembly + `main()`                                        |
@@ -59,10 +59,13 @@ pds-core callback, full OAuth flow).
   concerns that should be covered by end-to-end tests (see
   `docs/design/e2e-testing.md`).
 
-### 2. `auth-service/src/routes/` (0% — 7 route files, ~2300 lines total)
+### 2. `auth-service/src/routes/` (low coverage)
 
-**Files:** `login-page.ts`, `consent.ts`, `recovery.ts`, `account-login.ts`,
-`account-settings.ts`, `choose-handle.ts`, `complete.ts`
+The signed `resend-webhook.ts` receiver has HTTP-level integration coverage
+for valid signatures, rejected signatures, logged and ignored event filtering,
+structured logging, and retry correlation. The browser/OAuth route files remain
+this area's main gap: `login-page.ts`, `consent.ts`, `recovery.ts`, `account-login.ts`,
+`account-settings.ts`, `choose-handle.ts`, and `complete.ts`.
 
 **Why they're hard:**
 
@@ -80,6 +83,9 @@ pds-core callback, full OAuth flow).
 
 **What can be tested:**
 
+- Provider webhook routes can be tested through an ephemeral Express server
+  with locally signed payloads, as demonstrated by
+  `resend-webhook.test.ts`.
 - The DB-level logic used by these routes is already well-covered via
   `consent.test.ts` (auth_flow operations, client login tracking,
   signCallback round-trip).

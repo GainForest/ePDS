@@ -6,6 +6,8 @@ import { ForceLoginCheckbox } from './ForceLoginCheckbox'
 
 const ERROR_MESSAGES: Record<string, string> = {
   auth_failed: 'Authentication failed. Please try again.',
+  session_expired:
+    'Your sign-in took too long to finish. Please sign in again.',
   par_failed:
     'Could not start login — the PDS rejected the request. Check server logs.',
   invalid_email: 'Please enter a valid email address.',
@@ -38,6 +40,7 @@ export function LoginForm() {
     <>
       {errorMessage && (
         <div
+          role="alert"
           style={{
             background: 'var(--theme-error-bg, #fef2f2)',
             color: 'var(--theme-error-text, #dc2626)',
@@ -132,7 +135,7 @@ export function LoginForm() {
             padding: '14px 28px',
             fontSize: '16px',
             fontWeight: 500,
-            color: '#ffffff',
+            color: 'var(--theme-primary-text, #ffffff)',
             background: submitting
               ? '#4a4a4a'
               : 'var(--theme-primary, #2563eb)',

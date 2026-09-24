@@ -30,7 +30,7 @@ marked `[shared]` in the per-package `.env.example` files.
 | `EPDS_VERSION`             | Override the version string returned by `/health`. In Docker/Railway builds this is set automatically to `<package.json version>+<8-char commit SHA>`. In dev it falls back to the root `package.json` version. Only set this if you need a custom override.                |
 | `PDS_HOSTNAME`             | Your PDS domain — handles will be `<random>.PDS_HOSTNAME`                                                                                                                                                                                                                   |
 | `PDS_PUBLIC_URL`           | Full public URL of the PDS, used as OAuth issuer (e.g. `https://pds.example.com`)                                                                                                                                                                                           |
-| `EPDS_CALLBACK_SECRET`     | HMAC-SHA256 secret signing the `/oauth/epds-callback` redirect — generate with `openssl rand -hex 32`                                                                                                                                                                       |
+| `EPDS_CALLBACK_SECRET`     | **Required.** HMAC-SHA256 secret signing the `/oauth/epds-callback` redirect — generate with `openssl rand -hex 32`. Both pds-core and auth-service refuse to start if unset.                                                                                               |
 | `EPDS_INTERNAL_SECRET`     | Shared secret for internal service-to-service calls (auth → PDS) — generate with `openssl rand -hex 32`                                                                                                                                                                     |
 | `PDS_ADMIN_PASSWORD`       | PDS admin API password (auth-service uses it for account provisioning)                                                                                                                                                                                                      |
 | `NODE_ENV`                 | Set to `development` for dev mode (disables secure cookies)                                                                                                                                                                                                                 |
@@ -126,8 +126,7 @@ Optional PDS email variables:
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AUTH_HOSTNAME`       | Auth subdomain (e.g. `auth.pds.example.com`) — must be a subdomain of `PDS_HOSTNAME`                                                                                                                        |
 | `AUTH_PORT`           | Port for Auth Service. Resolved as `AUTH_PORT` → `PORT` → `3001`, so platforms that inject `PORT` (e.g. Railway) work without a service-specific override.                                                  |
-| `AUTH_SESSION_SECRET` | Session secret — generate with `openssl rand -hex 32`                                                                                                                                                       |
-| `AUTH_CSRF_SECRET`    | CSRF secret — generate with `openssl rand -hex 32`                                                                                                                                                          |
+| `AUTH_SESSION_SECRET` | **Required.** Session secret — generate with `openssl rand -hex 32`. Auth service refuses to start if unset.                                                                                                |
 | `PDS_INTERNAL_URL`    | **Required.** Internal URL for auth→PDS calls. Docker: `http://core:3000`; Railway: `http://<service>.railway.internal:3000`; local dev: `http://localhost:3000`. Auth service crashes at startup if unset. |
 
 ### Verification link settings
@@ -197,6 +196,62 @@ buttons appear on the login page.
 | `AWS_SES_SMTP_PASS`              | AWS SES SMTP password                                                                                                                                                                                                  |
 | `POSTMARK_SERVER_TOKEN`          | Postmark server token                                                                                                                                                                                                  |
 | `EMAIL_TEMPLATE_ALLOWED_DOMAINS` | Optional comma-separated list of HTTPS hostnames from which `email_template_uri` can be fetched. If unset, any HTTPS URL is allowed. If set, templates hosted on unlisted domains are logged as a warning and ignored. |
+
+#### Optional Resend email event logs
+
+ePDS does **not** require Resend: operators can use any SMTP provider. This
+provider-specific integration is only for operators who already send through
+Resend and choose to log its email webhooks. Without
+`RESEND_WEBHOOK_SECRET`, the webhook route is not mounted.
+
+| Variable                | Description                                                                                                                                           |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RESEND_WEBHOOK_SECRET` | Resend users only. Optional webhook signing secret (`whsec_...`) that enables `POST /webhooks/resend` and structured Resend event logs when provided. |
+
+To opt into email-event logging for email sent through Resend:
+
+1. In the Resend dashboard, register `https://<AUTH_HOSTNAME>/webhooks/resend`.
+2. Subscribe it to `email.sent`, `email.delivered`, `email.delivery_delayed`,
+   `email.opened`, `email.bounced`, `email.failed`, `email.complained`,
+   `email.suppressed`, and `email.scheduled`.
+3. To receive `email.opened`, enable Resend open tracking for the sending domain
+   and configure its tracking CNAME. Resend inserts the tracking pixel; ePDS
+   does not alter email HTML. Without tracking, the other events still work.
+4. Set `RESEND_WEBHOOK_SECRET` to that endpoint's signing secret and redeploy
+   the auth service.
+5. Send a test sign-in code through the production SMTP configuration and
+   confirm that `email.sent` and `email.delivered` reach the receiver. If open
+   tracking is enabled, open the message and confirm `email.opened` also arrives.
+   Resend's documentation does not explicitly guarantee that SMTP-submitted
+   email emits webhooks, so verify this before relying on the logs.
+
+Resend webhooks cover the whole Resend account rather than one sending domain.
+The receiver parses each event's `data.from` address and logs it only when it
+exactly matches this ePDS instance's `SMTP_FROM`; events for other senders are
+acknowledged without logging their payload. ePDS instances sharing a Resend
+account must therefore use distinct `SMTP_FROM` addresses. Events cannot be
+separated when multiple instances use the same sender address.
+
+The receiver verifies the Svix signature against the raw request body and emits
+a provider-neutral log schema: `provider`, `eventId`, `eventType`, `occurredAt`,
+`messageId`, `email`, and `subject`. Any sign-in code in `subject` is replaced
+with `[REDACTED]` to prevent it from reaching logs while preserving the rest of
+the subject. Resend event types are normalized to `sent`, `delivered`, `delayed`,
+`opened`, `bounced`, `failed`, `complained`, `suppressed`, or `scheduled`.
+`Delayed`, `complained`, and `suppressed` events use `warn`; the rest use `info`.
+An `opened` event means the tracking pixel was fetched, which can be caused or
+suppressed by mail-client privacy features and is not proof that the recipient
+read the message. Signed `email.clicked` and inbound `email.received` events are
+acknowledged without logging their payloads, preventing retries if the Resend
+endpoint is accidentally subscribed to them. No webhook data is persisted by
+ePDS. The
+provider-specific rate limit permits 300 webhook requests per minute per source
+IP.
+
+Resend retries carry the same source event ID, logged as `eventId`, and events
+may arrive out of order. Log analysis should deduplicate by `eventId`, order
+each `messageId` by `occurredAt`, and subtract `sent` from `delivered` to
+calculate delivery latency.
 
 ### Database
 

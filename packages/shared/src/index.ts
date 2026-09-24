@@ -15,7 +15,7 @@ export {
   signCallback,
   verifyCallback,
 } from './crypto.js'
-export type { CallbackParams, VerifyCallbackResult } from './crypto.js'
+export type { CallbackParams } from './crypto.js'
 export type {
   EpdsLinkConfig,
   EmailConfig,
@@ -80,3 +80,4 @@ export type { PostHookResult } from './test-utils/post-hook.js'
 export { ERROR_CSS, renderError } from './render-error.js'
 export type { RenderErrorOptions } from './render-error.js'
 export { resolveStartOverHref, sanitiseHttpUrl } from './start-over-href.js'
+export { requireEnv } from './require-env.js'

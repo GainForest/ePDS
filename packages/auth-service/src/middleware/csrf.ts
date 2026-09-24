@@ -4,7 +4,7 @@ import * as crypto from 'node:crypto'
 const CSRF_COOKIE = 'epds_csrf'
 const CSRF_HEADER = 'x-csrf-token'
 
-export function csrfProtection(_secret: string) {
+export function csrfProtection() {
   return (req: Request, res: Response, next: NextFunction): void => {
     // GET-backed routes need a CSRF token for both GET and implicit HEAD requests.
     if (req.method === 'GET' || req.method === 'HEAD') {

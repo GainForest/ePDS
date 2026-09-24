@@ -1,12 +1,12 @@
 ---
 name: writing-changesets
-description: Create changeset files for user-facing or operator-facing changes to ePDS. Use when adding features, changing configuration, altering OAuth flows, or any change a downstream consumer needs to adapt to.
+description: Create changeset files for changes to ePDS that affect end users, client app developers, or operators. Use when adding features, changing configuration, altering OAuth flows, or any change a downstream consumer needs to adapt to.
 ---
 
 # Writing Changesets
 
-Create a changeset file to document user-facing or operator-facing
-changes for release.
+Create a changeset file to document changes for release that affect
+end users, client app developers, or operators.
 
 ## When to Use
 
@@ -179,6 +179,25 @@ Every non-trivial changeset **must** contain, in this order:
    will recognise (env var names, field names, function names) —
    the plain-language rule only applies to the summary line above.
 
+   **Capitalize the first word after the bold audience label.**
+   A label such as `**End users:**` or `**Operators:**` is a
+   lead-in, but the text following it is a full sentence and must
+   start with a capital letter — the colon does not make the
+   following word mid-sentence. This applies even when the first
+   word is an identifier that is lowercase in code: capitalize the
+   surrounding prose, or reword so the identifier isn't
+   sentence-initial (e.g. start with "The `email_verified` claim
+   …", not "`email_verified` is now …").
+   - ✅ **End users:** Apps no longer ask you to verify an address you have already confirmed.
+   - ✅ **Client app developers:** The `email_verified` claim is now `true` …
+   - ✅ **Operators:** Deploy the auth service and the PDS together …
+   - ❌ **End users:** apps no longer ask you to verify … (lowercase "apps")
+   - ❌ **Operators:** deploy the auth service … (lowercase "deploy")
+
+   The same capitalization rule applies to each bullet when a
+   section is laid out as a bullet list (see below): every bullet
+   is a sentence and starts capitalized.
+
    Each paragraph in the changeset body must be **unwrapped**: one
    paragraph per physical line. Do not manually hard-wrap prose at
    72 or 80 columns inside the changeset file. Wrapped source lines
@@ -223,6 +242,49 @@ The goal: a reader in one of the listed audiences should be able
 to adapt their environment or code **without reading the PR or
 the source**. Changesets are not release-note marketing copy —
 they are migration instructions.
+
+### Keep it as short as the change deserves
+
+"Concrete" is not "exhaustive". Include exactly what the reader
+needs to adapt, and stop. Most changesets are **two to four
+sentences per audience**; a small change is often a single
+sentence. Length must track the size of what the reader has to do,
+not the effort that went into the change. A one-line behaviour
+tweak gets a one-line changeset even if the PR was large.
+
+Brevity and bullets are not in tension: cutting is about _how many_
+points survive, bullets are about _how you lay them out_ so the
+survivors stay scannable. First cut to the points the reader must
+act on; then, if 3+ remain, lay them out as bullets rather than
+packing them into one paragraph — a short multi-point section is
+still a wall of text when run together. Keep one- or two-point
+sections as inline prose. If you find yourself writing a fourth or
+fifth bullet, that is a signal to cut, not to keep listing.
+
+Before you finish, delete anything the reader does not act on:
+
+- **A verbatim example** (a full log line, a whole JSON body) when
+  naming the fields already tells them what to grep or send. Show
+  a shape only when the exact serialization is the thing they must
+  match.
+- **Rationale and "why" prose** — "since this can signal X", "so
+  that Y". State the observable behaviour; the reasoning belongs
+  in the commit or PR, not the release note.
+- **Exhaustive enumerations** — every endpoint, every reason
+  string, every excluded case — when a representative name plus
+  "and related …" conveys the same adaptation. List the full set
+  only when the reader must match against each member.
+- **Internal filtering the reader never sees** — "3xx are filtered
+  before this runs, 5xx are logged elsewhere". If it doesn't change
+  what they do, it doesn't belong.
+- **Caveats about edge cases** the reader cannot act on. One
+  clause at most; usually cut.
+
+Rule of thumb: if removing a sentence would not change what the
+reader _does_, remove it. A tight four-line changeset that names
+the fields and the observable effect beats a fifteen-line one that
+also explains the mechanism, quotes a sample, and enumerates every
+case.
 
 ### What "concrete detail" means
 
@@ -338,7 +400,7 @@ Longer sign-in codes, optionally mixing letters and numbers.
 
 **End users:** OTP codes may now be longer than 6 digits and may include uppercase letters if the operator has opted into the `alphanumeric` charset. Codes of length 8 or more are displayed with a space in the middle (e.g. `1234 5678`) for readability; copy-paste still yields the flat code.
 
-**Operators:** two new environment variables on the auth service — `OTP_LENGTH` (integer, range 4–12, default 8) and `OTP_CHARSET` (`numeric` (default) or `alphanumeric`). Values outside the range cause the service to fail on startup. The OTP input form fields adapt automatically; no template changes required.
+**Operators:** Two new environment variables on the auth service — `OTP_LENGTH` (integer, range 4–12, default 8) and `OTP_CHARSET` (`numeric` (default) or `alphanumeric`). Values outside the range cause the service to fail on startup. The OTP input form fields adapt automatically; no template changes required.
 ```
 
 A denser change with several distinct points per audience is
@@ -359,12 +421,12 @@ A second app sign-in in your browser now skips the email code step.
 - You either land on the "approve this app" screen or on a chooser where you confirm which identity to reuse.
 - A "Use a different account" link on the chooser takes you back to the email form.
 
-**Client app developers:** no client-side changes required.
+**Client app developers:** No client-side changes required.
 
 - When a previous sign-in's cookies are present, the user lands on the account chooser to confirm which identity to reuse.
 - To force the email code form instead, set the standard OIDC `prompt` parameter to `login` on the authorization request your OAuth library sends.
 
-**Operators:** no new required configuration.
+**Operators:** No new required configuration.
 
 - ePDS auto-detects whether the auth service shares a parent domain with the PDS (`AUTH_HOSTNAME` ends with `.<PDS_HOSTNAME>`) and broadens the device-session cookies to that parent. On unrelated hostnames the feature self-disables.
 ```
