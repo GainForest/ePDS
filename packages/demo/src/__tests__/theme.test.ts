@@ -56,4 +56,27 @@ describe('getTheme', () => {
       primaryText: '#1a1208',
     })
   })
+
+  it('provides a semantic Ma Earth consent MVP without old provider selectors', () => {
+    process.env.EPDS_CLIENT_THEME = 'maearth-consent-mvp'
+
+    const theme = getTheme()
+
+    expect(theme?.page).toMatchObject({
+      bg: '#F2ECE4',
+      surface: '#FAF8F6',
+      primary: '#21201F',
+      primaryText: '#FAF8F6',
+    })
+    expect(theme?.injectedCss).toContain('--branding-color-primary: 33 32 31')
+    expect(theme?.injectedCss).toContain('--card: #FAF8F6')
+    expect(theme?.injectedCss).toContain('--secondary: #EAE1D7')
+    expect(theme?.injectedCss).toContain('--branding-color-success: 93 138 93')
+    expect(theme?.injectedCss).toContain('color-scheme: light only !important')
+    expect(theme?.injectedCss).toContain('[data-slot="avatar"]')
+    expect(theme?.injectedCss).toContain('img[alt="Ma Earth"]')
+    expect(theme?.injectedCss).not.toContain('.bg-gray-')
+    expect(theme?.injectedCss).not.toContain('.text-slate-')
+    expect(theme?.injectedCss).not.toContain('Sign in with Certified')
+  })
 })
