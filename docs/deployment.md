@@ -43,6 +43,8 @@ docker compose up -d
 docker compose logs -f
 ```
 
+The service Dockerfiles copy the repository's `patches/` directory before the frozen pnpm install. Keep it in the Docker build context, including for custom or remote builders, so locally patched dependencies are available during image builds.
+
 Caddy handles TLS automatically via ACME/Let's Encrypt. The Docker Compose
 service caps Caddy at 512 MiB of memory and sets `GOMEMLIMIT=384MiB` so TLS
 storage maintenance or traffic spikes cannot exhaust the full VM.

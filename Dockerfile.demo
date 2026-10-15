@@ -9,6 +9,7 @@ WORKDIR /app
 
 # Copy only what pnpm needs to resolve the workspace
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
+COPY patches/ patches/
 COPY packages/demo/package.json packages/demo/
 
 # Stub out the other workspace packages so pnpm install doesn't fail

@@ -57,5 +57,10 @@
     "typescript-eslint": "^8.56.0",
     "vitest": "^4.1.0"
   },
-  "type": "module"
+  "type": "module",
+  "pnpm": {
+    "patchedDependencies": {
+      "@atproto/xrpc-server@0.13.1": "patches/@atproto__xrpc-server@0.13.1.patch"
+    }
+  }
 }

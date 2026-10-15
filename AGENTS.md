@@ -211,6 +211,8 @@ version-controlled policy while configuring nothing.
 
 ## Docker
 
+All service Dockerfiles copy the repository's `patches/` directory before the frozen pnpm install. Keep it in the Docker build context when changing `.dockerignore` or configuring a custom builder.
+
 ```bash
 # Build images — use pnpm docker:build to auto-stamp the version.
 # IMPORTANT: Only rebuild the services that changed. Check the diff to

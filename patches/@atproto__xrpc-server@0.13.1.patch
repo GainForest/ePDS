@@ -1,0 +1,15 @@
+diff --git a/dist/server.js b/dist/server.js
+index 14ee521f65f6a5d83f82ff6937e9d1aabb6edeae..e54551ef7f09340efacb0ed03d406c09798ad03a 100644
+--- a/dist/server.js
++++ b/dist/server.js
+@@ -262,6 +262,10 @@ export class Server {
+                     const encoding = output.encoding === 'json' ? 'application/json' : output.encoding;
+                     res.header('Content-Type', encoding);
+                     if (output.body instanceof Readable) {
++                        if (res.destroyed || res.closed) {
++                            output.body.destroy();
++                            return;
++                        }
+                         // The "Readable" check comes first to avoid calling "lexToJson" on
+                         // a stream, which would be a bug.
+                         await pipeline(output.body, res);

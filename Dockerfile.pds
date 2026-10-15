@@ -9,6 +9,7 @@ RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 RUN addgroup -g 1001 appuser && adduser -u 1001 -G appuser -D appuser
 WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
+COPY patches/ patches/
 COPY packages/shared/package.json packages/shared/
 COPY packages/auth-service/package.json packages/auth-service/
 COPY packages/pds-core/package.json packages/pds-core/

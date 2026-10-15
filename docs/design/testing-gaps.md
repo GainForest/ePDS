@@ -59,6 +59,12 @@ pds-core callback, full OAuth flow).
   concerns that should be covered by end-to-end tests (see
   `docs/design/e2e-testing.md`).
 
+The early blob-download disconnect race in the pinned `@atproto/xrpc-server`
+package is covered separately by
+`packages/pds-core/src/__tests__/xrpc-early-client-disconnect.test.ts`. This
+loopback HTTP test uses delayed fake storage and verifies both disconnect
+cleanup and normal streaming without initializing a PDS instance.
+
 ### 2. `auth-service/src/routes/` (low coverage)
 
 The signed `resend-webhook.ts` receiver has HTTP-level integration coverage
